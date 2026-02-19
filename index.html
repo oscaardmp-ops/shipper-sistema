@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shipper Perú · Sistema Operativo</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --teal:      #7EBDC2;
+  --teal-dk:   #5a9ea4;
+  --navy:      #394F5B;
+  --navy-lk:   #4a6475;
+  --bg:        #eef2f5;
+  --surface:   #ffffff;
+  --border:    #d8e4e8;
+  --text:      #1e2d35;
+  --muted:     #6b8794;
+  --success:   #27ae60;
+  --warning:   #e67e22;
+  --danger:    #e74c3c;
+  --r:         13px;
+  --sh:        0 2px 16px rgba(57,79,91,0.09);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Montserrat',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:linear-gradient(135deg,var(--navy) 0%,#253641 100%);
+  height:60px;padding:0 28px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 12px rgba(0,0,0,0.2);
+}
+.topbar-logo{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:1em;letter-spacing:.3px;}
+.logo-box{width:34px;height:34px;background:linear-gradient(135deg,var(--teal),var(--teal-dk));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1em;}
+.topbar-file{font-size:.72em;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;}
+
+/* ── LAYOUT ── */
+.shell{display:flex;flex:1;}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--navy);
+  padding:24px 0;
+  display:flex;flex-direction:column;gap:4px;
+  position:sticky;top:60px;height:calc(100vh - 60px);
+  overflow-y:auto;
+}
+.sidebar-section{
+  font-size:.62em;font-weight:700;color:rgba(255,255,255,.3);
+  text-transform:uppercase;letter-spacing:1.2px;
+  padding:16px 20px 6px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 20px;
+  color:rgba(255,255,255,.6);font-size:.82em;font-weight:600;
+  cursor:pointer;border-left:3px solid transparent;
+  transition:all .2s;
+}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+.nav-item.active{
+  background:rgba(126,189,194,.15);
+  color:#fff;border-left-color:var(--teal);
+}
+.nav-item .nav-icon{font-size:1.1em;width:22px;text-align:center;}
+.nav-badge{
+  margin-left:auto;background:var(--teal);color:var(--navy);
+  font-size:.6em;font-weight:800;padding:2px 7px;border-radius:20px;
+}
+
+/* ── CONTENT ── */
+.content{flex:1;padding:32px 32px 60px;overflow-y:auto;max-width:1000px;}
+
+/* ── MODULE PANELS ── */
+.module{display:none;}
+.module.active{display:block;animation:fadeUp .35s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+.module-header{margin-bottom:28px;}
+.module-title{font-size:1.3em;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:12px;}
+.module-title-icon{
+  width:42px;height:42px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:1.2em;
+  background:linear-gradient(135deg,rgba(126,189,194,.25),rgba(126,189,194,.05));
+  border:1.5px solid rgba(126,189,194,.3);
+}
+.module-subtitle{font-size:.8em;color:var(--muted);margin-top:6px;margin-left:54px;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);padding:28px;margin-bottom:20px;}
+.card-title{font-size:.9em;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.card-sub{font-size:.75em;color:var(--muted);margin-bottom:20px;padding-left:28px;}
+
+/* ── UPLOAD ── */
+.upload-zone{
+  border:2px dashed var(--teal);border-radius:var(--r);
+  padding:44px 24px;text-align:center;cursor:pointer;
+  transition:all .25s;background:rgba(126,189,194,.03);position:relative;
+}
+.upload-zone:hover,.upload-zone.over{background:rgba(126,189,194,.09);border-color:var(--teal-dk);transform:translateY(-2px);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:2.4em;display:block;margin-bottom:10px;}
+.upload-zone h3{font-size:.88em;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.upload-zone p{font-size:.74em;color:var(--muted);}
+.file-chips{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;}
+.chip{background:rgba(126,189,194,.12);border:1px solid rgba(126,189,194,.3);color:var(--teal-dk);padding:2px 10px;border-radius:20px;font-size:.68em;font-weight:700;font-family:'JetBrains Mono',monospace;}
+
+/* ── FILE LOADED ── */
+.file-loaded{display:flex;align-items:center;gap:12px;padding:14px 18px;
+  background:rgba(39,174,96,.07);border:1.5px solid rgba(39,174,96,.22);border-radius:10px;margin-top:14px;}
+.file-name{font-family:'JetBrains Mono',monospace;font-size:.82em;font-weight:600;color:var(--navy);}
+.file-meta{font-size:.7em;color:var(--muted);margin-top:2px;}
+.btn-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1em;padding:4px;border-radius:5px;transition:all .2s;margin-left:auto;}
+.btn-x:hover{color:var(--danger);background:rgba(231,76,60,.08);}
+
+/* ── FORM ── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+.flabel{font-size:.72em;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;}
+.finput{padding:11px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'Montserrat',sans-serif;font-size:.85em;color:var(--text);background:var(--bg);outline:none;transition:all .2s;}
+.finput:focus{border-color:var(--teal);background:#fff;box-shadow:0 0 0 3px rgba(126,189,194,.14);}
+
+/* ── BUTTONS ── */
+.btn{padding:11px 24px;border:none;border-radius:11px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.83em;cursor:pointer;transition:all .22s;display:inline-flex;align-items:center;gap:7px;}
+.btn-primary{background:linear-gradient(135deg,var(--teal) 0%,var(--navy) 100%);color:#fff;box-shadow:0 3px 14px rgba(126,189,194,.32);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 7px 20px rgba(126,189,194,.42);}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-secondary{background:var(--bg);color:var(--navy);border:1.5px solid var(--border);}
+.btn-secondary:hover{background:var(--border);}
+.btn-row{display:flex;align-items:center;gap:10px;margin-top:24px;flex-wrap:wrap;}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.stat{background:var(--surface);border-radius:12px;padding:18px;box-shadow:var(--sh);text-align:center;}
+.stat-val{font-size:1.8em;font-weight:800;color:var(--navy);line-height:1;}
+.stat-lbl{font-size:.68em;color:var(--muted);margin-top:5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.stats .stat:nth-child(1) .stat-val{color:var(--teal-dk);}
+.stats .stat:nth-child(3) .stat-val{color:var(--warning);}
+.stats .stat:nth-child(4) .stat-val{color:var(--success);}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:3px;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:18px;border:1.5px solid var(--border);}
+.tab{flex:1;padding:9px;text-align:center;font-size:.76em;font-weight:700;color:var(--muted);border-radius:7px;cursor:pointer;transition:all .2s;}
+.tab.active{background:#fff;color:var(--navy);box-shadow:0 2px 7px rgba(0,0,0,.08);}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:11px;border:1.5px solid var(--border);}
+table{width:100%;border-collapse:collapse;}
+th{background:linear-gradient(135deg,var(--navy),#253641);color:rgba(255,255,255,.8);font-size:.68em;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:13px 15px;text-align:left;white-space:nowrap;}
+th:first-child{border-radius:10px 0 0 0;}th:last-child{border-radius:0 10px 0 0;}
+td{padding:12px 15px;font-size:.82em;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(126,189,194,.05);}
+.td-client{font-weight:700;color:var(--navy);}
+.mono{font-family:'JetBrains Mono',monospace;font-size:.8em;background:rgba(126,189,194,.1);color:var(--teal-dk);padding:2px 7px;border-radius:5px;}
+.wbadge{background:rgba(57,79,91,.08);color:var(--navy);padding:2px 7px;border-radius:5px;font-weight:600;font-size:.85em;}
+
+/* ── CUSTOMS BADGES ── */
+.cbadge{font-size:.68em;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap;}
+.cb-v{background:rgba(230,126,34,.11);color:#a05d0a;border:1px solid rgba(230,126,34,.28);}
+.cb-hi{background:rgba(231,76,60,.09);color:#b03020;border:1px solid rgba(231,76,60,.22);}
+.cb-md{background:rgba(126,189,194,.12);color:var(--teal-dk);border:1px solid rgba(126,189,194,.3);}
+.cb-lo{background:rgba(39,174,96,.09);color:#1e8a50;border:1px solid rgba(39,174,96,.24);}
+
+/* ── MISSING / INCONSISTENCY BADGES ── */
+.tag-faltainv{background:rgba(231,76,60,.09);color:#b03020;border:1px solid rgba(231,76,60,.22);font-size:.68em;padding:2px 8px;border-radius:20px;font-weight:700;}
+.tag-faltawh{background:rgba(230,126,34,.11);color:#a05d0a;border:1px solid rgba(230,126,34,.28);font-size:.68em;padding:2px 8px;border-radius:20px;font-weight:700;}
+
+/* ── ALERTS ── */
+.alert{padding:12px 16px;border-radius:9px;font-size:.78em;font-weight:600;display:flex;align-items:flex-start;gap:9px;margin-bottom:14px;}
+.al-warn{background:rgba(230,126,34,.09);border:1px solid rgba(230,126,34,.28);color:#7a4500;}
+.al-err{background:rgba(231,76,60,.07);border:1px solid rgba(231,76,60,.22);color:#b03020;}
+.al-ok{background:rgba(39,174,96,.08);border:1px solid rgba(39,174,96,.22);color:#1e8a50;}
+.al-info{background:rgba(126,189,194,.1);border:1px solid rgba(126,189,194,.28);color:var(--teal-dk);}
+
+/* ── MESSAGE PREVIEW ── */
+.msg-box{background:var(--bg);border:1.5px solid var(--border);border-radius:11px;padding:18px;font-family:'JetBrains Mono',monospace;font-size:.74em;line-height:1.85;color:var(--navy);white-space:pre-wrap;word-break:break-word;max-height:320px;overflow-y:auto;}
+.msg-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.sel{padding:8px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Montserrat',sans-serif;font-size:.78em;background:#fff;outline:none;cursor:pointer;}
+.sel:focus{border-color:var(--teal);}
+
+/* ── EXPORT CARDS ── */
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.exp-card{border:1.5px solid var(--border);border-radius:11px;padding:20px;text-align:center;cursor:pointer;transition:all .22s;background:var(--bg);}
+.exp-card:hover{border-color:var(--teal);background:rgba(126,189,194,.07);transform:translateY(-3px);box-shadow:0 7px 20px rgba(126,189,194,.18);}
+.exp-icon{font-size:1.9em;margin-bottom:7px;display:block;}
+.exp-lbl{font-weight:700;font-size:.82em;color:var(--navy);}
+.exp-desc{font-size:.7em;color:var(--muted);margin-top:3px;}
+
+/* ── DASHBOARD ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dash-card{background:var(--surface);border-radius:12px;box-shadow:var(--sh);padding:22px;}
+.dash-card-title{font-size:.78em;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.dash-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:.78em;}
+.dash-row:last-child{border-bottom:none;}
+.dash-key{color:var(--muted);font-weight:600;}
+.dash-val{font-weight:700;color:var(--navy);}
+
+/* ── MESSAGE CARDS ── */
+.msg-card{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:18px;transition:border-color .2s;}
+.msg-card:hover{border-color:var(--teal);}
+.msg-card-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+
+/* ── SORTABLE TH ── */
+th[onclick]:hover{background:linear-gradient(135deg,#4a6475,#2e4050);cursor:pointer;}
+
+/* ── MISC ── */
+.hidden{display:none!important;}
+.divider{height:1px;background:var(--border);margin:20px 0;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+::-webkit-scrollbar-thumb:hover{background:var(--teal);}
+.search-bar{padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-family:'Montserrat',sans-serif;font-size:.78em;background:#fff;outline:none;width:100%;max-width:240px;transition:all .2s;}
+.search-bar:focus{border-color:var(--teal);}
+@media(max-width:720px){
+  .sidebar{display:none;}
+  .stats{grid-template-columns:1fr 1fr;}
+  .form-row,.dash-grid,.exp-grid{grid-template-columns:1fr;}
+  .content{padding:20px 16px 40px;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-box">📦</div>
+    Shipper Perú
+  </div>
+  <div class="topbar-file" id="topbar-file">Sistema Operativo v3.3</div>
+</div>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-section">Módulos</div>
+  <div class="nav-item active" onclick="switchModule('home')" id="nav-home">
+    <span class="nav-icon">🏠</span> Inicio
+  </div>
+  <div class="nav-item" onclick="switchModule('validacion')" id="nav-validacion">
+    <span class="nav-icon">🔍</span> Validación
+  </div>
+  <div class="nav-item" onclick="switchModule('facturacion')" id="nav-facturacion">
+    <span class="nav-icon">🚛</span> Facturación
+  </div>
+  <div class="nav-item" onclick="switchModule('analisis')" id="nav-analisis">
+    <span class="nav-icon">📊</span> Análisis
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ══════════════════════════════════ -->
+  <!-- MÓDULO: HOME                       -->
+  <!-- ══════════════════════════════════ -->
+  <div class="module active" id="mod-home">
+    <div class="module-header">
+      <div class="module-title"><div class="module-title-icon">🏠</div> Bienvenido</div>
+      <div class="module-subtitle">Selecciona un módulo del menú para comenzar</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="card" style="cursor:pointer;transition:all .22s;" onclick="switchModule('validacion')"
+           onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(126,189,194,.18)'"
+           onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:2em;margin-bottom:12px;">🔍</div>
+        <div style="font-weight:800;font-size:.95em;color:var(--navy);margin-bottom:6px;">Validación de Inventarios</div>
+        <div style="font-size:.76em;color:var(--muted);line-height:1.6;">Compara el archivo Warehouse vs Inventario. Detecta registros faltantes e inconsistencias entre ambos sistemas.</div>
+        <div style="margin-top:16px;font-size:.72em;font-weight:700;color:var(--teal-dk);">Archivos: ListadoWarehouse.xlsx + INVENTARIO.csv →</div>
+      </div>
+
+      <div class="card" style="cursor:pointer;transition:all .22s;" onclick="switchModule('facturacion')"
+           onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(126,189,194,.18)'"
+           onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <div style="font-size:2em;margin-bottom:12px;">🚛</div>
+        <div style="font-weight:800;font-size:.95em;color:var(--navy);margin-bottom:6px;">Facturación y Mensajería</div>
+        <div style="font-size:.76em;color:var(--muted);line-height:1.6;">Genera facturas por cliente con desaduanaje inteligente y mensajes personalizados para WhatsApp.</div>
+        <div style="margin-top:16px;font-size:.72em;font-weight:700;color:var(--teal-dk);">Archivos: inventario.csv → Facturas + Mensajes →</div>
+      </div>
+    </div>
+
+    <div class="card" style="cursor:pointer;transition:all .22s;" onclick="switchModule('analisis')"
+         onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(126,189,194,.18)'"
+         onmouseout="this.style.transform='';this.style.boxShadow=''">
+      <div style="font-size:2em;margin-bottom:12px;">📊</div>
+      <div style="font-weight:800;font-size:.95em;color:var(--navy);margin-bottom:6px;">Análisis Unificado</div>
+      <div style="font-size:.76em;color:var(--muted);line-height:1.6;">Dashboard con métricas consolidadas de los módulos ejecutados en esta sesión: registros procesados, problemas encontrados, tiempo de ejecución.</div>
+      <div style="margin-top:16px;font-size:.72em;font-weight:700;color:var(--teal-dk);">Requiere haber ejecutado los módulos 1 o 2 primero →</div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(135deg,var(--navy),#253641);color:#fff;">
+      <div style="font-size:.78em;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Novedades v3.3</div>
+      <div style="font-size:.8em;line-height:2;opacity:.88;">
+        ✅ &nbsp;Desaduanaje por rangos: 0-50$ ($4) · 50-100$ ($7) · 100-200$ ($11)<br>
+        ✅ &nbsp;Viajero &gt;$200: Servicio (10%) + Seguro (1%)<br>
+        ✅ &nbsp;Mensajes formato WhatsApp con backticks y negritas<br>
+        ✅ &nbsp;Limpieza profunda de nombres (espacios invisibles, enters)<br>
+        ✅ &nbsp;Parsing robusto de fechas con múltiples formatos
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <!-- MÓDULO 1: VALIDACIÓN               -->
+  <!-- ══════════════════════════════════ -->
+  <div class="module" id="mod-validacion">
+    <div class="module-header">
+      <div class="module-title"><div class="module-title-icon">🔍</div> Validación de Inventarios</div>
+      <div class="module-subtitle">Compara Warehouse vs Inventario · Detecta faltantes e inconsistencias</div>
+    </div>
+
+    <!-- Carga de archivos -->
+    <div class="card" id="val-upload-card">
+      <div class="card-title">📂 Archivos requeridos</div>
+      <div class="card-sub">Sube ambos archivos para comenzar la comparación</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Warehouse -->
+        <div>
+          <div style="font-size:.72em;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">1 · Warehouse (.xlsx)</div>
+          <div class="upload-zone" id="wh-zone">
+            <input type="file" id="wh-input" accept=".xlsx,.xls">
+            <span class="upload-icon">🏭</span>
+            <h3>ListadoWarehouse.xlsx</h3>
+            <p>Arrastra o haz clic</p>
+            <div class="file-chips"><span class="chip">.XLSX</span></div>
+          </div>
+          <div id="wh-loaded" class="hidden"></div>
+        </div>
+        <!-- Inventario -->
+        <div>
+          <div style="font-size:.72em;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">2 · Inventario (.csv)</div>
+          <div class="upload-zone" id="inv-zone">
+            <input type="file" id="inv-input" accept=".csv">
+            <span class="upload-icon">📋</span>
+            <h3>INVENTARIO.csv</h3>
+            <p>Arrastra o haz clic</p>
+            <div class="file-chips"><span class="chip">.CSV</span></div>
+          </div>
+          <div id="inv-loaded" class="hidden"></div>
+        </div>
+      </div>
+
+      <div id="val-errors" class="hidden" style="margin-top:14px;"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-validar" disabled onclick="runValidation()">
+          🔍 Validar inventarios
+        </button>
+      </div>
+    </div>
+
+    <!-- Resultados validación -->
+    <div id="val-results" class="hidden">
+      <div class="stats" id="val-stats"></div>
+
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" onclick="valTab('faltantes')">❌ Faltantes</div>
+          <div class="tab" onclick="valTab('inconsistencias')">⚠️ Inconsistencias</div>
+        </div>
+
+        <!-- Faltantes -->
+        <div id="vtab-faltantes">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:.78em;color:var(--muted);">Registros presentes en un sistema pero no en el otro</div>
+            <input class="search-bar" placeholder="🔍 Filtrar WR..." oninput="filterVal('faltantes',this.value)">
+          </div>
+          <div class="tbl-wrap">
+            <table><thead><tr><th>WR</th><th>Estado</th><th>Fuente</th></tr></thead>
+            <tbody id="faltantes-tbody"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Inconsistencias -->
+        <div id="vtab-inconsistencias" class="hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:.78em;color:var(--muted);">Registros presentes en ambos sistemas pero con datos distintos</div>
+            <input class="search-bar" placeholder="🔍 Filtrar WR..." oninput="filterVal('inconsistencias',this.value)">
+          </div>
+          <div class="tbl-wrap">
+            <table><thead><tr><th>WR</th><th>Campos</th><th>Warehouse</th><th>Inventario</th></tr></thead>
+            <tbody id="inconsistencias-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export val -->
+      <div class="card">
+        <div class="card-title">⬇️ Exportar resultados</div>
+        <div class="exp-grid">
+          <div class="exp-card" onclick="exportValCSV('faltantes')">
+            <span class="exp-icon">❌</span>
+            <div class="exp-lbl">Faltantes CSV</div>
+            <div class="exp-desc">Registros ausentes en uno u otro sistema</div>
+          </div>
+          <div class="exp-card" onclick="exportValCSV('inconsistencias')">
+            <span class="exp-icon">⚠️</span>
+            <div class="exp-lbl">Inconsistencias CSV</div>
+            <div class="exp-desc">Registros con datos diferentes entre sistemas</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="resetValidacion()">↩ Nueva validación</button>
+          <button class="btn btn-primary" onclick="exportValCSV('all')">⬇️ Descargar todo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <!-- MÓDULO 2: FACTURACIÓN              -->
+  <!-- ══════════════════════════════════ -->
+  <div class="module" id="mod-facturacion">
+    <div class="module-header">
+      <div class="module-title"><div class="module-title-icon">🚛</div> Facturación y Mensajería</div>
+      <div class="module-subtitle">Genera facturas Zoho + mensajes WhatsApp · Desaduanaje inteligente</div>
+    </div>
+
+    <!-- Upload -->
+    <div class="card" id="fac-upload-card">
+      <div class="card-title">📂 Cargar inventario</div>
+      <div class="card-sub">CSV con: nombre_cliente, numero_tracking, peso_usa, descripcion, fecha_registro_usa, nombre_consignado, tipo_paquete, nombre_tienda, valor</div>
+
+      <div class="upload-zone" id="fac-zone">
+        <input type="file" id="fac-input" accept=".csv,.xlsx,.xls">
+        <span class="upload-icon">📄</span>
+        <h3>Arrastra tu archivo aquí</h3>
+        <p>o haz clic para seleccionarlo</p>
+        <div class="file-chips"><span class="chip">.CSV</span><span class="chip">.XLSX</span></div>
+      </div>
+      <div id="fac-loaded" class="hidden"></div>
+      <div id="fac-file-alerts" class="hidden" style="margin-top:12px;"></div>
+
+      <div class="divider"></div>
+
+      <div class="form-row">
+        <div class="fg">
+          <label class="flabel">📅 Fecha de entrega</label>
+          <input type="date" class="finput" id="fac-date">
+          <span style="font-size:.7em;color:var(--muted);margin-top:3px;">En mensajes: <em id="fac-date-preview">—</em></span>
+        </div>
+        <div class="fg">
+          <label class="flabel">📋 Resumen rápido</label>
+          <div style="padding:11px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;font-size:.78em;color:var(--muted);line-height:2;">
+            <span><strong id="fac-sum-c" style="color:var(--navy);">—</strong> clientes</span> &nbsp;·&nbsp;
+            <span><strong id="fac-sum-p" style="color:var(--navy);">—</strong> paquetes</span> &nbsp;·&nbsp;
+            <span><strong id="fac-sum-w" style="color:var(--navy);">—</strong> kg</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-procesar" disabled onclick="runFacturacion()">
+          ⚙️ Procesar y generar
+        </button>
+      </div>
+    </div>
+
+    <!-- Resultados facturación -->
+    <div id="fac-results" class="hidden">
+      <div class="stats" id="fac-stats"></div>
+
+      <div class="card">
+        <div class="tabs">
+          <div class="tab" onclick="facTab('facturas')">📄 Facturas</div>
+          <div class="tab" onclick="facTab('mensajes')">💬 Mensajes</div>
+          <div class="tab active" onclick="facTab('resumen')">📊 Resumen</div>
+        </div>
+
+        <!-- Facturas -->
+        <div id="ftab-facturas" class="hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div style="font-size:.78em;color:var(--muted);"><strong id="fac-lines" style="color:var(--navy);">—</strong> líneas · <strong id="fac-client-count" style="color:var(--navy);">—</strong> clientes</div>
+              <button class="btn btn-secondary" style="padding:6px 14px;font-size:.74em;" onclick="toggleFacSort()" id="btn-sort-fac">
+                🔤 A→Z
+              </button>
+            </div>
+            <input class="search-bar" placeholder="🔍 Filtrar cliente..." oninput="filterFac(this.value)">
+          </div>
+          <div class="tbl-wrap">
+            <table><thead><tr><th>#</th><th>Cliente</th><th>Concepto</th><th>Detalle</th><th>Cant.</th><th>Precio</th><th>Total</th></tr></thead>
+            <tbody id="fac-tbody"></tbody></table>
+          </div>
+        </div>
+
+        <!-- Mensajes -->
+        <div id="ftab-mensajes" class="hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:.78em;color:var(--muted);"><strong id="msg-total-count" style="color:var(--navy);">—</strong> mensajes generados</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input class="search-bar" placeholder="🔍 Filtrar cliente..." oninput="filterMsgs(this.value)" style="width:200px;">
+              <button class="btn btn-secondary" style="padding:6px 14px;font-size:.74em;" onclick="toggleMsgSort()" id="btn-sort-msg">🔤 A→Z</button>
+            </div>
+          </div>
+          <div id="msg-all-list" style="display:flex;flex-direction:column;gap:16px;"></div>
+          <div style="margin-top:12px;font-size:.7em;color:var(--muted);">💡 * y _ se renderizan en WhatsApp como negrita e itálica</div>
+        </div>
+
+        <!-- Resumen -->
+        <div id="ftab-resumen">
+          <!-- Info del archivo -->
+          <div id="resumen-file-info" style="margin-bottom:16px;padding:16px 20px;background:var(--bg);border-radius:10px;border:1.5px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:12px;"></div>
+          <!-- Controles resumen -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:.74em;color:var(--muted);">Haz clic en una columna para ordenar</div>
+            <input class="search-bar" placeholder="🔍 Filtrar cliente..." oninput="filterResumen(this.value)" style="width:200px;">
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="cursor:pointer;user-select:none;" onclick="sortResumen('c')">Cliente <span id="rs-c">↕</span></th>
+                  <th style="cursor:pointer;user-select:none;" onclick="sortResumen('n')">Paquetes <span id="rs-n">↕</span></th>
+                  <th style="cursor:pointer;user-select:none;" onclick="sortResumen('w')">Peso kg <span id="rs-w">↕</span></th>
+                  <th style="cursor:pointer;user-select:none;" onclick="sortResumen('v')">Valor declarado <span id="rs-v">↕</span></th>
+                  <th style="cursor:pointer;user-select:none;" onclick="sortResumen('total')">Total factura <span id="rs-total">↕</span></th>
+                </tr>
+              </thead>
+              <tbody id="resumen-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Gráficos -->
+          <div style="margin-top:28px;">
+            <div style="font-size:.78em;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+              <span style="opacity:.5;">────</span> Gráficos del lote <span style="opacity:.5;">────</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:16px;">
+              <!-- Doughnut Top 5 + Otros -->
+              <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:20px;">
+                <div style="font-size:.76em;font-weight:700;color:var(--navy);margin-bottom:3px;">🥧 % Ingreso — Top 5</div>
+                <div style="font-size:.68em;color:var(--muted);margin-bottom:12px;">Por total facturado · resto agrupado como "Otros"</div>
+                <div style="position:relative;height:240px;">
+                  <canvas id="chart-pie"></canvas>
+                </div>
+              </div>
+              <!-- Barras horizontales combinadas Top 5: peso + paquetes -->
+              <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:20px;">
+                <div style="font-size:.76em;font-weight:700;color:var(--navy);margin-bottom:3px;">📊 Peso y paquetes — Top 5</div>
+                <div style="font-size:.68em;color:var(--muted);margin-bottom:12px;">Barras agrupadas · 🟦 kg · ⬛ paquetes</div>
+                <div style="position:relative;height:240px;">
+                  <canvas id="chart-bar-combined"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export fac -->
+      <div class="card">
+        <div class="card-title">⬇️ Exportar archivos</div>
+        <div class="exp-grid">
+          <div class="exp-card" onclick="exportFacCSV('invoices')">
+            <span class="exp-icon">📊</span>
+            <div class="exp-lbl">Facturas CSV</div>
+            <div class="exp-desc">Formato Zoho Invoice — listo para importar</div>
+          </div>
+          <div class="exp-card" onclick="exportFacCSV('messages')">
+            <span class="exp-icon">💬</span>
+            <div class="exp-lbl">Mensajes CSV</div>
+            <div class="exp-desc">Un mensaje por cliente para WhatsApp</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" onclick="resetFacturacion()">↩ Nuevo archivo</button>
+          <button class="btn btn-primary" onclick="exportFacAll()">⬇️ Descargar todo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════ -->
+  <!-- MÓDULO 3: ANÁLISIS                 -->
+  <!-- ══════════════════════════════════ -->
+  <div class="module" id="mod-analisis">
+    <div class="module-header">
+      <div class="module-title"><div class="module-title-icon">📊</div> Análisis Unificado</div>
+      <div class="module-subtitle">Métricas consolidadas de los módulos ejecutados en esta sesión</div>
+    </div>
+    <div id="analisis-content"></div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /shell -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════
+const SESSION = {
+  val: { whData:[], invData:[], missing:[], inconsistencies:[], ran:false, time:0 },
+  fac: { rawData:[], cleanData:[], invoiceRows:[], messageRows:[], ran:false, time:0, deliveryLabel:'' }
+};
+
+const WEEKDAYS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MONTHS   = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+const WH_COLS  = ['WR','Tracking','Cliente','Tipo Paquete','Peso','Estado'];
+const INV_COLS = ['numero_warehouse','numero_tracking','nombre_consignado','tipo_paquete','peso_usa'];
+const FAC_COLS = ['nombre_cliente','numero_tracking','peso_usa','descripcion','fecha_registro_usa','nombre_consignado','tipo_paquete','nombre_tienda','valor'];
+
+const INVOICE_EXPORT_COLS = [
+  'Customer Name','Invoice Number','PurchaseOrder','Invoice Date','Due Date',
+  'Expected Payment Date','Payment Terms','Payment Terms Label','Invoice Status',
+  'Is Tracked For MOSS','Currency Code','Exchange Rate','Sales person',
+  'Is Inclusive Tax','Item Name','SKU','Item Desc','Is Digital Service','Quantity',
+  'Usage unit','Item Price','Item Tax1','Item Tax1 Type','Item Tax1 %',
+  'Expense Reference ID','Discount','Discount Amount','Discount Type',
+  'Is Discount Before Tax','Entity Discount Percent','Entity Discount Amount',
+  'Shipping Charge','Adjustment','Adjustment Description','Notes','Terms & Conditions',
+  'PayPal','Authorize.Net','Payflow Pro','Stripe','2Checkout','Braintree','Forte',
+  'WorldPay','Payments Pro','Square','WePay','GoCardless','Partial Payments',
+  'Template Name','Branch Name','Warehouse Name','CF.Transporter_Name'
+];
+
+// ═══════════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════════
+function switchModule(id) {
+  document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`mod-${id}`).classList.add('active');
+  document.getElementById(`nav-${id}`).classList.add('active');
+  if (id === 'analisis') renderAnalisis();
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS: PARSE / CLEAN
+// ═══════════════════════════════════════════════════
+function cleanStr(v) {
+  if (v==null) return '';
+  return v.toString()
+    .replace(/[\n\r\t]/g,' ')
+    .replace(/[\u00A0\u200B\u200C\u200D\u202F\u2028\u2029\u3000]/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+function parseNum(v) {
+  if (!v && v!==0) return 0;
+  const n = parseFloat(v.toString().replace(',','.'));
+  return isNaN(n)?0:n;
+}
+function parseValor(v) {
+  if (!v) return 0;
+  const n = parseFloat(v.toString().replace(/[$USD,\s]/gi,'').trim());
+  return isNaN(n)?0:n;
+}
+function parseDate(v) {
+  if (!v) return null;
+  const s = v.toString().trim();
+  let d = new Date(s);
+  if (!isNaN(d.getTime())) return d;
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) d = new Date(`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`);
+  return isNaN(d?.getTime())?null:d;
+}
+function countWorkdays(start, end) {
+  let c=0; const cur=new Date(start); cur.setHours(0,0,0,0);
+  const e=new Date(end); e.setHours(0,0,0,0);
+  while(cur<e){const d=cur.getDay();if(d!==0&&d!==6)c++;cur.setDate(cur.getDate()+1);}
+  return c;
+}
+function fmtDate(d){return d.toISOString().split('T')[0];}
+function ts(){return new Date().toISOString().replace(/[:.]/g,'').slice(0,15);}
+function esc(s){return (s??'').toString().replace(/"/g,'""');}
+
+function readFileData(file, cb) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext==='csv') {
+    const r=new FileReader();
+    r.onload=e=>{
+      const res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true,transformHeader:h=>h.trim()});
+      cb(res.data, null);
+    };
+    r.readAsText(file,'UTF-8');
+  } else {
+    const r=new FileReader();
+    r.onload=e=>{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const data=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const norm=data.map(row=>{const o={};Object.keys(row).forEach(k=>{o[k.trim()]=row[k];});return o;});
+      cb(norm, null);
+    };
+    r.readAsBinaryString(file);
+  }
+}
+
+function showFileLoaded(containerId, file, extra='') {
+  document.getElementById(containerId).innerHTML=`
+    <div class="file-loaded">
+      <span style="font-size:1.4em;">✅</span>
+      <div style="flex:1;">
+        <div class="file-name">${file.name}</div>
+        <div class="file-meta">${extra} · ${(file.size/1024).toFixed(1)} KB</div>
+      </div>
+    </div>`;
+  document.getElementById(containerId).classList.remove('hidden');
+}
+
+function toCSV(rows, cols) {
+  const header = cols.join(',');
+  const lines  = rows.map(r=>cols.map(c=>`"${esc(r[c]??'')}"`).join(','));
+  return [header,...lines].join('\n');
+}
+function downloadCSV(content, name) {
+  const blob=new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name; a.click();
+}
+function mkStats(items) {
+  return items.map((item,i)=>`
+    <div class="stat" style="animation-delay:${i*0.07}s;animation:fadeUp .35s ease both;">
+      <div class="stat-val">${item.val}</div>
+      <div class="stat-lbl">${item.lbl}</div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// ── MÓDULO 1: VALIDACIÓN ────────────────────────────
+// ═══════════════════════════════════════════════════
+(function setupValidacion() {
+  let whFile=null, invFile=null;
+
+  function setupZone(zoneId, inputId, loadedId, onLoad) {
+    const zone  = document.getElementById(zoneId);
+    const input = document.getElementById(inputId);
+    zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('over');});
+    zone.addEventListener('dragleave', ()=>zone.classList.remove('over'));
+    zone.addEventListener('drop', e=>{e.preventDefault();zone.classList.remove('over');if(e.dataTransfer.files[0])onLoad(e.dataTransfer.files[0]);});
+    input.addEventListener('change', e=>{if(e.target.files[0])onLoad(e.target.files[0]);});
+  }
+
+  setupZone('wh-zone','wh-input','wh-loaded', file=>{
+    whFile=file;
+    readFileData(file, (data)=>{
+      SESSION.val.whData = data;
+      showFileLoaded('wh-loaded', file, `${data.length} filas`);
+      checkBtnValidar();
+    });
+  });
+
+  setupZone('inv-zone','inv-input','inv-loaded', file=>{
+    invFile=file;
+    readFileData(file, (data)=>{
+      SESSION.val.invData = data;
+      showFileLoaded('inv-loaded', file, `${data.length} filas`);
+      checkBtnValidar();
+    });
+  });
+
+  function checkBtnValidar() {
+    document.getElementById('btn-validar').disabled =
+      !(SESSION.val.whData.length && SESSION.val.invData.length);
+  }
+})();
+
+function runValidation() {
+  const t0 = performance.now();
+  let wh  = SESSION.val.whData.map(r=>({...r}));
+  let inv = SESSION.val.invData.map(r=>({...r}));
+
+  // Validar columnas Warehouse
+  const whCols = Object.keys(wh[0]||{});
+  const missingWH = WH_COLS.filter(c=>!whCols.includes(c));
+  if (missingWH.length) {
+    showValError(`❌ Warehouse: Faltan columnas: <strong>${missingWH.join(', ')}</strong><br><small>Encontradas: ${whCols.join(', ')}</small>`);
+    return;
+  }
+
+  // Filtrar solo RECIBIDO en warehouse
+  wh = wh.filter(r=>(r['Estado']||'').toString().trim().toUpperCase()==='RECIBIDO');
+
+  // Limpiar warehouse
+  wh = wh.map(r=>({
+    numero_warehouse:  cleanStr(r['WR']),
+    numero_tracking:   cleanStr(r['Tracking']),
+    nombre_consignado: cleanStr(r['Cliente']),
+    tipo_paquete:      cleanStr(r['Tipo Paquete']),
+    peso_usa:          parseNum(r['Peso']),
+  })).filter(r=>r.numero_warehouse && r.peso_usa>0);
+
+  // Normalizar columnas inventario
+  inv = inv.map(r=>{
+    const o={};
+    Object.keys(r).forEach(k=>{ o[k.trim().toLowerCase().replace(/\s+/g,'_')]=r[k]; });
+    // alias peso
+    if (!o['peso_usa'] && o['peso']) o['peso_usa']=o['peso'];
+    return o;
+  });
+
+  // Validar columnas inventario
+  const invCols = Object.keys(inv[0]||{});
+  const missingINV = ['numero_warehouse','numero_tracking','peso_usa'].filter(c=>!invCols.includes(c));
+  if (missingINV.length) {
+    showValError(`❌ Inventario: Faltan columnas: <strong>${missingINV.join(', ')}</strong><br><small>Encontradas: ${invCols.join(', ')}</small>`);
+    return;
+  }
+
+  // Limpiar inventario
+  inv = inv.map(r=>({
+    numero_warehouse:  cleanStr(r['numero_warehouse']),
+    numero_tracking:   cleanStr(r['numero_tracking']),
+    nombre_consignado: cleanStr(r['nombre_consignado']),
+    tipo_paquete:      cleanStr(r['tipo_paquete']),
+    peso_usa:          parseNum((r['peso_usa']||'').toString().replace('KGS','')),
+  })).filter(r=>r.numero_warehouse);
+
+  // Eliminar duplicados en inventario
+  const seen=new Set();
+  inv=inv.filter(r=>{ if(seen.has(r.numero_warehouse))return false; seen.add(r.numero_warehouse); return true; });
+
+  // Comparar
+  const whMap  = new Map(wh.map(r=>[r.numero_warehouse, r]));
+  const invMap = new Map(inv.map(r=>[r.numero_warehouse, r]));
+  const whSet  = new Set(whMap.keys());
+  const invSet = new Set(invMap.keys());
+
+  const missing = [];
+  whSet.forEach(wr=>{ if(!invSet.has(wr)) missing.push({numero_warehouse:wr, estado:'Falta en Inventario', fuente:'Warehouse'}); });
+  invSet.forEach(wr=>{ if(!whSet.has(wr)) missing.push({numero_warehouse:wr, estado:'Falta en Warehouse',  fuente:'Inventario'}); });
+
+  const inconsistencies = [];
+  whSet.forEach(wr=>{
+    if(!invSet.has(wr)) return;
+    const w=whMap.get(wr), v=invMap.get(wr);
+    const diffs=[]; const wdets=[]; const idets=[];
+    const fields=[['numero_tracking','Tracking'],['nombre_consignado','Cliente'],['tipo_paquete','Tipo Paquete'],['peso_usa','Peso']];
+    fields.forEach(([f,l])=>{
+      if(String(w[f]).trim()!==String(v[f]).trim()){
+        diffs.push(f); wdets.push(`${l}: ${w[f]}`); idets.push(`${l}: ${v[f]}`);
+      }
+    });
+    if(diffs.length) inconsistencies.push({numero_warehouse:wr, campos:diffs.join(', '), valor_warehouse:wdets.join('; '), valor_inventario:idets.join('; ')});
+  });
+
+  SESSION.val.missing=missing;
+  SESSION.val.inconsistencies=inconsistencies;
+  SESSION.val.ran=true;
+  SESSION.val.time=((performance.now()-t0)/1000).toFixed(2);
+  SESSION.val.whCount=wh.length;
+  SESSION.val.invCount=inv.length;
+
+  renderValResults();
+}
+
+function showValError(html) {
+  const d=document.getElementById('val-errors');
+  d.innerHTML=`<div class="alert al-err"><span>❌</span><div>${html}</div></div>`;
+  d.classList.remove('hidden');
+}
+
+function renderValResults() {
+  const {missing,inconsistencies,whCount,invCount} = SESSION.val;
+
+  document.getElementById('val-stats').innerHTML = mkStats([
+    {val:whCount,   lbl:'Warehouse'},
+    {val:invCount,  lbl:'Inventario'},
+    {val:missing.length, lbl:'Faltantes'},
+    {val:inconsistencies.length, lbl:'Inconsistencias'},
+  ]);
+
+  // Tabla faltantes
+  const ftb=document.getElementById('faltantes-tbody');
+  ftb.innerHTML = missing.length ? missing.map(r=>`
+    <tr>
+      <td><span class="mono">${r.numero_warehouse}</span></td>
+      <td><span class="${r.estado==='Falta en Inventario'?'tag-faltainv':'tag-faltawh'}">${r.estado}</span></td>
+      <td style="color:var(--muted);font-size:.78em;">${r.fuente}</td>
+    </tr>`).join('') : `<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--success);font-weight:700;">✅ Sin faltantes</td></tr>`;
+
+  // Tabla inconsistencias
+  const itb=document.getElementById('inconsistencias-tbody');
+  itb.innerHTML = inconsistencies.length ? inconsistencies.map(r=>`
+    <tr>
+      <td><span class="mono">${r.numero_warehouse}</span></td>
+      <td style="font-size:.76em;color:var(--warning);font-weight:600;">${r.campos}</td>
+      <td style="font-size:.74em;color:var(--muted);">${r.valor_warehouse}</td>
+      <td style="font-size:.74em;color:var(--muted);">${r.valor_inventario}</td>
+    </tr>`).join('') : `<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--success);font-weight:700;">✅ Sin inconsistencias</td></tr>`;
+
+  document.getElementById('val-results').classList.remove('hidden');
+  document.getElementById('val-results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function valTab(tab) {
+  ['faltantes','inconsistencias'].forEach(t=>{
+    document.getElementById(`vtab-${t}`).classList.toggle('hidden', t!==tab);
+  });
+  document.querySelectorAll('#mod-validacion .tab').forEach((el,i)=>{
+    el.classList.toggle('active',['faltantes','inconsistencias'][i]===tab);
+  });
+}
+
+function filterVal(tab, q) {
+  const tbody = document.getElementById(tab==='faltantes'?'faltantes-tbody':'inconsistencias-tbody');
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    tr.style.display = tr.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+function exportValCSV(type) {
+  const {missing,inconsistencies}=SESSION.val;
+  if (type==='faltantes'||type==='all') {
+    downloadCSV(toCSV(missing,['numero_warehouse','estado','fuente']),`Faltantes_${ts()}.csv`);
+  }
+  if (type==='inconsistencias'||type==='all') {
+    setTimeout(()=>downloadCSV(
+      toCSV(inconsistencies,['numero_warehouse','campos','valor_warehouse','valor_inventario']),
+      `Inconsistencias_${ts()}.csv`
+    ),400);
+  }
+}
+
+function resetValidacion() {
+  SESSION.val.whData=[]; SESSION.val.invData=[];
+  document.getElementById('wh-loaded').classList.add('hidden');
+  document.getElementById('inv-loaded').classList.add('hidden');
+  document.getElementById('val-results').classList.add('hidden');
+  document.getElementById('val-errors').classList.add('hidden');
+  document.getElementById('btn-validar').disabled=true;
+  document.getElementById('wh-input').value='';
+  document.getElementById('inv-input').value='';
+}
+
+// ═══════════════════════════════════════════════════
+// ── MÓDULO 2: FACTURACIÓN ───────────────────────────
+// ═══════════════════════════════════════════════════
+(function setupFacturacion(){
+  // Fecha mínima = mañana
+  const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  const facDate=document.getElementById('fac-date');
+  facDate.min=tomorrow.toISOString().split('T')[0];
+  facDate.value=tomorrow.toISOString().split('T')[0];
+  updateFacDatePreview();
+  facDate.addEventListener('change', updateFacDatePreview);
+
+  const zone=document.getElementById('fac-zone');
+  const input=document.getElementById('fac-input');
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('over');if(e.dataTransfer.files[0])handleFacFile(e.dataTransfer.files[0]);});
+  input.addEventListener('change',e=>{if(e.target.files[0])handleFacFile(e.target.files[0]);});
+})();
+
+function updateFacDatePreview() {
+  const v=document.getElementById('fac-date').value;
+  if(!v){document.getElementById('fac-date-preview').textContent='—';return;}
+  const d=new Date(v+'T12:00:00');
+  document.getElementById('fac-date-preview').textContent=`${WEEKDAYS[d.getDay()]} ${d.getDate()} de ${MONTHS[d.getMonth()]}`;
+}
+
+function handleFacFile(file) {
+  readFileData(file, (data, err)=>{
+    if(!data||!data.length){
+      showFacAlert('al-err','❌ Archivo vacío.');
+      return;
+    }
+    const cols=Object.keys(data[0]).map(c=>c.trim().toLowerCase());
+    const missing=FAC_COLS.filter(c=>!cols.includes(c));
+    if(missing.length){
+      showFacAlert('al-err',`❌ Faltan columnas: <strong>${missing.join(', ')}</strong><br><small>Encontradas: ${Object.keys(data[0]).join(', ')}</small>`);
+      return;
+    }
+    SESSION.fac.rawData=data;
+    showFileLoaded('fac-loaded',file,`${data.length} filas`);
+    document.getElementById('btn-procesar').disabled=false;
+
+    // Quick summary
+    const clients=[...new Set(data.map(r=>cleanStr(r['nombre_cliente'])).filter(Boolean))];
+    const weight=data.reduce((s,r)=>s+(parseNum(r['peso_usa'])||0),0);
+    document.getElementById('fac-sum-c').textContent=clients.length;
+    document.getElementById('fac-sum-p').textContent=data.length;
+    document.getElementById('fac-sum-w').textContent=weight.toFixed(1);
+
+    // Quick validation warnings
+    const badDates=data.filter(r=>!parseDate(r['fecha_registro_usa'])).length;
+    const badWeights=data.filter(r=>parseNum(r['peso_usa'])<=0).length;
+    const warns=[];
+    if(badDates)warns.push(`⚠️ ${badDates} fila(s) con fecha inválida — serán excluidas`);
+    if(badWeights)warns.push(`⚠️ ${badWeights} fila(s) con peso ≤ 0 — serán excluidas`);
+    if(warns.length) showFacAlert('al-warn', warns.join('<br>'));
+    else document.getElementById('fac-file-alerts').classList.add('hidden');
+  });
+}
+
+function showFacAlert(cls, html) {
+  const d=document.getElementById('fac-file-alerts');
+  d.innerHTML=`<div class="alert ${cls}"><span>${cls.includes('err')?'❌':'⚠️'}</span><div>${html}</div></div>`;
+  d.classList.remove('hidden');
+}
+
+function runFacturacion() {
+  const t0=performance.now();
+  const deliveryVal=document.getElementById('fac-date').value;
+  if(!deliveryVal){alert('Selecciona la fecha de entrega.');return;}
+  const deliveryDate=new Date(deliveryVal+'T12:00:00');
+  const deliveryLabel=`${WEEKDAYS[deliveryDate.getDay()]} ${deliveryDate.getDate()} de ${MONTHS[deliveryDate.getMonth()]}`;
+  SESSION.fac.deliveryLabel=deliveryLabel;
+
+  // Limpiar datos
+  const clean=SESSION.fac.rawData.map(r=>({
+    nombre_cliente:    cleanStr(r['nombre_cliente']),
+    numero_tracking:   cleanStr(r['numero_tracking']),
+    peso_usa:          parseNum(r['peso_usa']),
+    descripcion:       cleanStr(r['descripcion']),
+    fecha_registro_usa:parseDate(r['fecha_registro_usa']),
+    nombre_consignado: cleanStr(r['nombre_consignado']),
+    tipo_paquete:      cleanStr(r['tipo_paquete']),
+    nombre_tienda:     cleanStr(r['nombre_tienda']),
+    valor:             parseValor(r['valor']),
+  })).filter(r=>r.nombre_cliente&&r.numero_tracking&&r.peso_usa>0&&r.fecha_registro_usa);
+
+  SESSION.fac.cleanData=clean;
+
+  // Agrupar por cliente
+  const byClient={};
+  clean.forEach(r=>{ if(!byClient[r.nombre_cliente])byClient[r.nombre_cliente]=[]; byClient[r.nombre_cliente].push(r); });
+
+  // Generar facturas
+  const invoiceRows=[];
+  const todayStr=fmtDate(new Date());
+  let invNum=1;
+
+  Object.entries(byClient).forEach(([client,pkgs])=>{
+    const totalW=pkgs.reduce((s,p)=>s+p.peso_usa,0);
+    const shippingDesc=`Total: ${totalW.toFixed(1)} kg `+pkgs.map(p=>`(${p.numero_tracking} ${p.nombre_consignado} ${p.tipo_paquete} ${p.peso_usa}kg)`).join(', ');
+    const base={'Customer Name':client,'Invoice Number':invNum,'Invoice Date':todayStr,'Due Date':todayStr,'Payment Terms Label':'A la recepción','Invoice Status':'Draft','Currency Code':'USD'};
+
+    invoiceRows.push({...base,'Item Name':'ENVIO REGULAR','Item Desc':shippingDesc,'Quantity':totalW.toFixed(2),'Usage unit':'kg','Item Price':10,'_total':totalW*10});
+
+    const viajero=pkgs.filter(p=>p.valor>200);
+    const normal =pkgs.filter(p=>p.valor<=200);
+
+    viajero.forEach(p=>{
+      const desc=`(${p.descripcion} ${p.nombre_tienda} ${client} $${p.valor.toFixed(2)})`;
+      invoiceRows.push({...base,'Item Name':'SERVICIO VIAJERO','Item Desc':desc,'Quantity':1,'Usage unit':'','Item Price':+(p.valor*0.10).toFixed(2),'_total':+(p.valor*0.10).toFixed(2)});
+      invoiceRows.push({...base,'Item Name':'SEGURO VIAJERO',  'Item Desc':desc,'Quantity':1,'Usage unit':'','Item Price':+(p.valor*0.01).toFixed(2),'_total':+(p.valor*0.01).toFixed(2)});
+    });
+
+    if(normal.length){
+      let rem=normal.reduce((s,p)=>s+p.valor,0), acc=0;
+      const totalNormal=rem;
+      const nDesc=normal.map(p=>`(${p.descripcion} ${p.nombre_tienda} ${client} $${p.valor.toFixed(2)})`).join(', ');
+      while(rem>0){
+        let type,price,covered;
+        if(rem>100)     {type='DESADUANAJE 100-200$';price=11;covered=Math.min(rem,200);}
+        else if(rem>50) {type='DESADUANAJE 50-100$'; price=7; covered=Math.min(rem,100);}
+        else            {type='DESADUANAJE 0-50$';   price=4; covered=rem;}
+        const rs=acc, re=acc+covered; acc+=covered; rem-=covered;
+        const finalDesc=`(Rango: $${rs.toFixed(0)}-$${re.toFixed(0)} / Total: $${totalNormal.toFixed(0)}) ${nDesc}`;
+        invoiceRows.push({...base,'Item Name':type,'Item Desc':finalDesc,'Quantity':1,'Usage unit':'','Item Price':price,'_total':price});
+      }
+    }
+    invNum++;
+  });
+
+  // Generar mensajes
+  const messageRows=[];
+  Object.entries(byClient).forEach(([client,pkgs])=>{
+    const totalP=pkgs.length, totalW=pkgs.reduce((s,p)=>s+p.peso_usa,0);
+    const lines=pkgs.map(p=>{
+      const regStr=fmtDate(p.fecha_registro_usa);
+      const wd=countWorkdays(p.fecha_registro_usa,deliveryDate);
+      return `📦 *Tracking:* \`${p.numero_tracking}\`\n   🪶 Peso: *${p.peso_usa} kg*\n   📝 Descripción: _${p.descripcion}_\n   🇺🇸 Registrado: ${regStr} (${wd} días hábiles)`;
+    }).join('\n\n');
+    const msg=`Hola *${client}* 👋\n\n🚛 ¡Tus paquetes están en camino a Perú!\n📅 Entrega programada para: *${deliveryLabel}*\n\n─────────────────────\n*DETALLE DE PAQUETES:*\n\n${lines}\n\n─────────────────────\n📊 *RESUMEN TOTAL:*\n- Paquetes: *${totalP}*\n- Peso total: *${totalW.toFixed(1)} kg*\n\n─────────────────────\n*¿QUÉ DESEAS HACER?*\n\nResponde con:\n> *1* = Programar entrega para la fecha indicada\n> *2* = Consolidar (esperar más productos)\n\n_En caso de programar la entrega:_\n📍 Por favor, completa este formulario con tus datos de entrega *(solo una vez; si ya lo hiciste antes, puedes omitirlo):*\n🔗 https://forms.gle/9DJtXNSr6eiJkYJu5\n\n✨ ¡Gracias por confiar en *Shipper Perú*!`;
+    messageRows.push({'Customer Name':client,'Mensaje':msg,'Fecha_Entrega':deliveryLabel,'Fecha_Entrega_ISO':fmtDate(deliveryDate)});
+  });
+
+  SESSION.fac.invoiceRows=invoiceRows;
+  SESSION.fac.messageRows=messageRows;
+  SESSION.fac.ran=true;
+  SESSION.fac.time=((performance.now()-t0)/1000).toFixed(2);
+  SESSION.fac.byClient=byClient;
+
+  renderFacResults(byClient);
+}
+
+// ── Estado de ordenación ──────────────────────────
+const FAC_SORT = { az: true };         // facturas: true=A-Z, false=Z-A
+const MSG_SORT = { az: true };         // mensajes: true=A-Z, false=Z-A
+const RES_SORT = { col: 'c', asc: true }; // resumen
+
+function renderFacResults(byClient) {
+  const {invoiceRows,messageRows,cleanData,rawData}=SESSION.fac;
+  const clients=Object.keys(byClient).length;
+  const weight=cleanData.reduce((s,r)=>s+r.peso_usa,0);
+
+  document.getElementById('fac-stats').innerHTML=mkStats([
+    {val:clients,           lbl:'Clientes'},
+    {val:cleanData.length,  lbl:'Paquetes'},
+    {val:weight.toFixed(1), lbl:'Kg totales'},
+    {val:invoiceRows.length,lbl:'Líneas factura'},
+  ]);
+
+  document.getElementById('fac-client-count').textContent=clients;
+
+  // Renderizar secciones
+  FAC_SORT.az=true;
+  renderFacTable();
+  renderMsgList();
+  renderResumenTable(byClient);
+  renderResumenFileInfo(rawData, cleanData);
+
+  document.getElementById('fac-results').classList.remove('hidden');
+  document.getElementById('fac-results').scrollIntoView({behavior:'smooth',block:'start'});
+  // Abrir directamente en Resumen y dibujar gráficos
+  setTimeout(()=>facTab('resumen'), 80);
+}
+
+// ── Tab facturas ──────────────────────────────────
+function renderFacTable() {
+  const rows=[...SESSION.fac.invoiceRows];
+  // Ordenar A-Z o Z-A por cliente
+  rows.sort((a,b)=>{
+    const cmp=a['Customer Name'].localeCompare(b['Customer Name'],'es',{sensitivity:'base'});
+    return FAC_SORT.az ? cmp : -cmp;
+  });
+
+  document.getElementById('fac-lines').textContent=rows.length;
+  const tbody=document.getElementById('fac-tbody');
+  tbody.innerHTML=rows.map(row=>{
+    const item=row['Item Name'];
+    let badge='';
+    if(item==='ENVIO REGULAR')            badge=`<span class="mono">${item}</span>`;
+    else if(item.includes('VIAJERO'))     badge=`<span class="cbadge cb-v">${item}</span>`;
+    else if(item==='DESADUANAJE 100-200$')badge=`<span class="cbadge cb-hi">${item}</span>`;
+    else if(item==='DESADUANAJE 50-100$') badge=`<span class="cbadge cb-md">${item}</span>`;
+    else if(item==='DESADUANAJE 0-50$')   badge=`<span class="cbadge cb-lo">${item}</span>`;
+    const desc=(row['Item Desc']||'').slice(0,70)+((row['Item Desc']||'').length>70?'…':'');
+    const total=(+row['Item Price'] * +row['Quantity']).toFixed(2);
+    return `<tr>
+      <td style="color:var(--muted);font-size:.75em;">${row['Invoice Number']}</td>
+      <td><span class="td-client">${row['Customer Name']}</span></td>
+      <td>${badge}</td>
+      <td style="max-width:220px;font-size:.74em;color:var(--muted);" title="${row['Item Desc']}">${desc}</td>
+      <td><span class="wbadge">${(+row['Quantity']).toFixed(2)}</span></td>
+      <td style="font-weight:600;">$${(+row['Item Price']).toFixed(2)}</td>
+      <td style="font-weight:700;color:var(--navy);">$${total}</td>
+    </tr>`;
+  }).join('');
+
+  // Actualizar label del botón
+  document.getElementById('btn-sort-fac').textContent = FAC_SORT.az ? '🔤 A→Z ✓' : '🔤 Z→A ✓';
+}
+
+function toggleFacSort() {
+  FAC_SORT.az = !FAC_SORT.az;
+  renderFacTable();
+}
+
+function filterFac(q) {
+  document.querySelectorAll('#fac-tbody tr').forEach(tr=>{
+    tr.style.display=tr.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+// ── Tab mensajes (todos visibles) ─────────────────
+function renderMsgList() {
+  const msgs=[...SESSION.fac.messageRows];
+  msgs.sort((a,b)=>{
+    const cmp=a['Customer Name'].localeCompare(b['Customer Name'],'es',{sensitivity:'base'});
+    return MSG_SORT.az ? cmp : -cmp;
+  });
+
+  document.getElementById('msg-total-count').textContent=msgs.length;
+  document.getElementById('btn-sort-msg').textContent = MSG_SORT.az ? '🔤 A→Z ✓' : '🔤 Z→A ✓';
+
+  const container=document.getElementById('msg-all-list');
+  container.innerHTML=msgs.map((m,i)=>`
+    <div class="msg-card" data-client="${m['Customer Name'].toLowerCase()}">
+      <div class="msg-card-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.82em;flex-shrink:0;">
+            ${m['Customer Name'].charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:.88em;color:var(--navy);">${m['Customer Name']}</div>
+            <div style="font-size:.7em;color:var(--muted);">📅 ${m['Fecha_Entrega']}</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" style="padding:6px 12px;font-size:.72em;" onclick="copyMsg(${i})" id="copy-btn-${i}">
+          📋 Copiar
+        </button>
+      </div>
+      <div class="msg-box" style="margin-top:10px;max-height:220px;">${m['Mensaje']}</div>
+    </div>`).join('');
+}
+
+function toggleMsgSort() {
+  MSG_SORT.az = !MSG_SORT.az;
+  renderMsgList();
+}
+
+function filterMsgs(q) {
+  document.querySelectorAll('.msg-card').forEach(card=>{
+    card.style.display=card.dataset.client.includes(q.toLowerCase())?'':'none';
+  });
+}
+
+function copyMsg(idx) {
+  const msgs=[...SESSION.fac.messageRows];
+  msgs.sort((a,b)=>MSG_SORT.az
+    ? a['Customer Name'].localeCompare(b['Customer Name'],'es',{sensitivity:'base'})
+    : b['Customer Name'].localeCompare(a['Customer Name'],'es',{sensitivity:'base'}));
+  navigator.clipboard.writeText(msgs[idx]['Mensaje']).then(()=>{
+    const btn=document.getElementById(`copy-btn-${idx}`);
+    const orig=btn.textContent;
+    btn.textContent='✅ Copiado';
+    btn.style.color='var(--success)';
+    setTimeout(()=>{btn.textContent=orig;btn.style.color='';},2000);
+  });
+}
+
+// ── Tab resumen ───────────────────────────────────
+function buildResumenRows(byClient) {
+  return Object.entries(byClient).map(([c,pkgs])=>{
+    const w=pkgs.reduce((s,p)=>s+p.peso_usa,0);
+    const v=pkgs.reduce((s,p)=>s+p.valor,0);
+    const ship=w*10;
+    // calcular desaduanaje de este cliente
+    const invRows=SESSION.fac.invoiceRows.filter(r=>
+      r['Customer Name']===c && r['Item Name']!=='ENVIO REGULAR'
+    );
+    const desad=invRows.reduce((s,r)=>s+(+r['Item Price'] * +r['Quantity']),0);
+    return {c,n:pkgs.length,w,v,ship,desad,total:ship+desad};
+  });
+}
+
+function renderResumenTable(byClient) {
+  SESSION.fac.resumenRows = buildResumenRows(byClient);
+  drawResumenTable();
+}
+
+function drawResumenTable() {
+  let rows=[...SESSION.fac.resumenRows];
+  const {col,asc}=RES_SORT;
+
+  rows.sort((a,b)=>{
+    const cmp = col==='c'
+      ? a.c.localeCompare(b.c,'es',{sensitivity:'base'})
+      : (a[col]||0)-(b[col]||0);
+    return asc ? cmp : -cmp;
+  });
+
+  // Actualizar indicadores de columna
+  ['c','n','w','v','total'].forEach(k=>{
+    const el=document.getElementById(`rs-${k}`);
+    if(el) el.textContent = col===k ? (asc?'↑':'↓') : '↕';
+  });
+
+  const grandTotal=rows.reduce((s,r)=>s+r.total,0);
+
+  document.getElementById('resumen-tbody').innerHTML=
+    rows.map(r=>`
+      <tr data-res-client="${r.c.toLowerCase()}">
+        <td><span class="td-client">${r.c}</span></td>
+        <td><span class="wbadge">${r.n}</span></td>
+        <td>${r.w.toFixed(2)} kg</td>
+        <td style="color:var(--muted);">$${r.v.toFixed(2)}</td>
+        <td style="font-weight:800;color:var(--teal-dk);font-size:.95em;">$${r.total.toFixed(2)}</td>
+      </tr>`).join('') +
+    `<tr style="background:rgba(126,189,194,.09);">
+      <td colspan="4" style="font-weight:700;text-align:right;color:var(--navy);">TOTAL LOTE</td>
+      <td style="font-weight:800;font-size:1.1em;color:var(--teal-dk);">$${grandTotal.toFixed(2)}</td>
+    </tr>`;
+}
+
+function sortResumen(col) {
+  if(RES_SORT.col===col) RES_SORT.asc=!RES_SORT.asc;
+  else { RES_SORT.col=col; RES_SORT.asc = (col==='c'); }
+  drawResumenTable();
+}
+
+function filterResumen(q) {
+  document.querySelectorAll('#resumen-tbody tr[data-res-client]').forEach(tr=>{
+    tr.style.display=tr.dataset.resClient.includes(q.toLowerCase())?'':'none';
+  });
+}
+
+// ── Gráficos ──────────────────────────────────────
+const CHART_PALETTE = [
+  '#7EBDC2','#394F5B','#5a9ea4','#4a6475','#9ECDD2','#253641',
+  '#6baeb3','#2d3f4a','#b0d8db','#1e2d35','#80b4b9','#344e5c'
+];
+let _charts={};
+
+function destroyChart(id){
+  if(_charts[id]){_charts[id].destroy();delete _charts[id];}
+}
+
+function renderCharts() {
+  const all   = [...SESSION.fac.resumenRows].sort((a,b) => b.total - a.total);
+  const top5  = all.slice(0, 5);
+  const rest  = all.slice(5);
+  const hasOtros = rest.length > 0;
+  const otrosTotal = rest.reduce((s,r) => s+r.total, 0);
+  const otrosPeso  = rest.reduce((s,r) => s+r.w,     0);
+  const otrosPkgs  = rest.reduce((s,r) => s+r.n,     0);
+  const grandTotal = all.reduce((s,r) => s+r.total,  0);
+  const short = n => n.length > 18 ? n.slice(0,17)+'…' : n;
+  const cf = {family:'Montserrat', size:10};
+
+  // ── 1. Doughnut Top 5 + Otros ─────────────────────
+  destroyChart('pie');
+  const pieLabels = [...top5.map(r=>short(r.c)), ...(hasOtros?['Otros']:[])];
+  const pieData   = [...top5.map(r=>r.total),    ...(hasOtros?[otrosTotal]:[])];
+  const pieColors = [...CHART_PALETTE.slice(0,5), ...(hasOtros?['#b0bec5']:[])];
+
+  _charts['pie'] = new Chart(document.getElementById('chart-pie'), {
+    type: 'doughnut',
+    data: { labels: pieLabels, datasets: [{ data: pieData, backgroundColor: pieColors, borderWidth: 2, borderColor: '#eef2f5', hoverOffset: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: cf, color: '#394F5B', boxWidth: 11, padding: 7 } },
+        tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.toFixed(2)} (${(ctx.parsed/grandTotal*100).toFixed(1)}%)` } }
+      }
+    }
+  });
+
+  // ── 2. Barras horizontales combinadas Top 5 ────────
+  // ordenar por peso desc para las barras
+  const barRows = [...top5].sort((a,b) => b.w - a.w);
+  const barLabels = [...barRows.map(r=>short(r.c)), ...(hasOtros?['Otros']:[])];
+  const barPeso   = [...barRows.map(r=>+r.w.toFixed(2)), ...(hasOtros?[+otrosPeso.toFixed(2)]:[])];
+  const barPkgs   = [...barRows.map(r=>r.n),              ...(hasOtros?[otrosPkgs]:[])];
+
+  destroyChart('bar-combined');
+  _charts['bar-combined'] = new Chart(document.getElementById('chart-bar-combined'), {
+    type: 'bar',
+    data: {
+      labels: barLabels,
+      datasets: [
+        { label: 'Peso (kg)', data: barPeso, backgroundColor: '#7EBDC2', borderRadius: 5, borderSkipped: false, yAxisID: 'yL' },
+        { label: 'Paquetes',  data: barPkgs, backgroundColor: '#394F5B', borderRadius: 5, borderSkipped: false, yAxisID: 'yR' }
+      ]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: cf, color: '#394F5B', boxWidth: 11, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label === 'Peso (kg)' ? ` ${ctx.parsed.x} kg` : ` ${ctx.parsed.x} paquetes` } }
+      },
+      scales: {
+        y:  { grid: { display: false }, ticks: { font: cf, color: '#394F5B' } },
+        yL: { display: false, position: 'left'  },
+        yR: { display: false, position: 'right' },
+        x:  { grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: cf, color: '#6b8794' } }
+      }
+    }
+  });
+}
+
+// ── Tab switcher ──────────────────────────────────
+function facTab(tab) {
+  ['facturas','mensajes','resumen'].forEach(t=>{
+    document.getElementById(`ftab-${t}`).classList.toggle('hidden',t!=='resumen'&&t!==tab ? true : t!==tab);
+  });
+  document.querySelectorAll('#mod-facturacion .tab').forEach((el,i)=>{
+    el.classList.toggle('active',['facturas','mensajes','resumen'][i]===tab);
+  });
+  if(tab==='resumen' && SESSION.fac.ran) {
+    // pequeño delay para que los canvas estén visibles antes de dibujar
+    setTimeout(renderCharts, 50);
+  }
+}
+
+function updateMsg() {} // legacy
+
+function renderResumenFileInfo(rawData, cleanData) {
+  const excluded=rawData.length-cleanData.length;
+  const tipos={};
+  cleanData.forEach(r=>{ tipos[r.tipo_paquete]=(tipos[r.tipo_paquete]||0)+1; });
+  const tipoStr=Object.entries(tipos).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${t}: ${n}`).join(' · ');
+  const weight=cleanData.reduce((s,r)=>s+r.peso_usa,0);
+  const valor =cleanData.reduce((s,r)=>s+r.valor,0);
+  const minDate=cleanData.reduce((m,r)=>r.fecha_registro_usa<m?r.fecha_registro_usa:m, cleanData[0]?.fecha_registro_usa);
+  const maxDate=cleanData.reduce((m,r)=>r.fecha_registro_usa>m?r.fecha_registro_usa:m, cleanData[0]?.fecha_registro_usa);
+
+  document.getElementById('resumen-file-info').innerHTML=`
+    <div>
+      <div style="font-size:.68em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Registros</div>
+      <div style="font-weight:700;color:var(--navy);">${cleanData.length} válidos</div>
+      ${excluded>0?`<div style="font-size:.72em;color:var(--danger);">⚠️ ${excluded} excluidos</div>`:'<div style="font-size:.72em;color:var(--success);">✅ Sin exclusiones</div>'}
+    </div>
+    <div>
+      <div style="font-size:.68em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Peso y valor</div>
+      <div style="font-weight:700;color:var(--navy);">${weight.toFixed(2)} kg</div>
+      <div style="font-size:.72em;color:var(--muted);">Valor declarado: $${valor.toFixed(2)}</div>
+    </div>
+    <div>
+      <div style="font-size:.68em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Fechas registro USA</div>
+      <div style="font-weight:700;color:var(--navy);font-size:.82em;">${minDate?fmtDate(minDate):'—'}</div>
+      <div style="font-size:.72em;color:var(--muted);">hasta ${maxDate?fmtDate(maxDate):'—'}</div>
+    </div>
+    <div style="grid-column:1/-1;">
+      <div style="font-size:.68em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Tipos de paquete</div>
+      <div style="font-size:.76em;color:var(--navy);font-weight:600;">${tipoStr||'—'}</div>
+    </div>`;
+}
+
+
+function exportFacCSV(type) {
+  const {invoiceRows,messageRows}=SESSION.fac;
+  if(type==='invoices'||type==='all') {
+    const clean=invoiceRows.map(r=>{const o={};INVOICE_EXPORT_COLS.forEach(c=>{o[c]=r[c]??'';});return o;});
+    downloadCSV(toCSV(clean,INVOICE_EXPORT_COLS),`Facturas_${ts()}.csv`);
+  }
+  if(type==='messages'||type==='all') {
+    const cols=['Customer Name','Mensaje','Fecha_Entrega','Fecha_Entrega_ISO'];
+    setTimeout(()=>downloadCSV(toCSV(messageRows,cols),`Mensajes_${ts()}.csv`),400);
+  }
+}
+
+function exportFacAll(){exportFacCSV('all');}
+
+function resetFacturacion(){
+  SESSION.fac.rawData=[];
+  document.getElementById('fac-loaded').classList.add('hidden');
+  document.getElementById('fac-file-alerts').classList.add('hidden');
+  document.getElementById('fac-results').classList.add('hidden');
+  document.getElementById('btn-procesar').disabled=true;
+  document.getElementById('fac-input').value='';
+  document.getElementById('fac-sum-c').textContent='—';
+  document.getElementById('fac-sum-p').textContent='—';
+  document.getElementById('fac-sum-w').textContent='—';
+}
+
+// ═══════════════════════════════════════════════════
+// ── MÓDULO 3: ANÁLISIS ──────────────────────────────
+// ═══════════════════════════════════════════════════
+function renderAnalisis() {
+  const {val,fac}=SESSION;
+  const noData=!val.ran&&!fac.ran;
+  const el=document.getElementById('analisis-content');
+
+  if(noData){
+    el.innerHTML=`
+      <div class="card" style="text-align:center;padding:60px 24px;">
+        <div style="font-size:3em;margin-bottom:16px;">📭</div>
+        <div style="font-weight:700;font-size:.95em;color:var(--navy);margin-bottom:8px;">Sin datos aún</div>
+        <div style="font-size:.78em;color:var(--muted);">Ejecuta el módulo de Validación o Facturación primero para ver métricas aquí.</div>
+        <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="switchModule('validacion')">🔍 Ir a Validación</button>
+          <button class="btn btn-primary"   onclick="switchModule('facturacion')">🚛 Ir a Facturación</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  let html='';
+
+  // Stats globales
+  const totalRecords=(val.ran?val.whCount+val.invCount:0)+(fac.ran?fac.cleanData.length:0);
+  const totalIssues=(val.ran?val.missing.length+val.inconsistencies.length:0);
+  const totalTime=(parseFloat(val.time||0)+parseFloat(fac.time||0)).toFixed(2);
+  const modules=[val.ran?'Validación':'',fac.ran?'Facturación':''].filter(Boolean).join(', ');
+
+  html+=`<div class="stats" style="margin-bottom:24px;">
+    ${mkStats([
+      {val:modules||'—', lbl:'Módulos usados'},
+      {val:totalRecords,  lbl:'Registros procesados'},
+      {val:totalIssues,   lbl:'Problemas detectados'},
+      {val:`${totalTime}s`,lbl:'Tiempo total'},
+    ])}
+  </div>`;
+
+  html+='<div class="dash-grid">';
+
+  // Card validación
+  if(val.ran){
+    const total=Math.max(val.whCount,val.invCount);
+    const correct=total-val.missing.length-val.inconsistencies.length;
+    const quality=total>0?(correct/total*100).toFixed(1):0;
+    html+=`<div class="dash-card">
+      <div class="dash-card-title">🔍 Validación de Inventarios</div>
+      <div class="dash-row"><span class="dash-key">Warehouse</span><span class="dash-val">${val.whCount} registros</span></div>
+      <div class="dash-row"><span class="dash-key">Inventario</span><span class="dash-val">${val.invCount} registros</span></div>
+      <div class="dash-row"><span class="dash-key">Faltantes</span><span class="dash-val" style="color:${val.missing.length?'var(--danger)':'var(--success)'};">${val.missing.length}</span></div>
+      <div class="dash-row"><span class="dash-key">Inconsistencias</span><span class="dash-val" style="color:${val.inconsistencies.length?'var(--warning)':'var(--success)'};">${val.inconsistencies.length}</span></div>
+      <div class="dash-row"><span class="dash-key">Calidad de datos</span><span class="dash-val" style="color:${quality>=95?'var(--success)':quality>=80?'var(--warning)':'var(--danger)'};">${quality}%</span></div>
+      <div class="dash-row"><span class="dash-key">Tiempo</span><span class="dash-val">${val.time}s</span></div>
+    </div>`;
+  }
+
+  // Card facturación
+  if(fac.ran){
+    const clients=Object.keys(fac.byClient||{}).length;
+    const weight=fac.cleanData.reduce((s,r)=>s+r.peso_usa,0);
+    const totalShip=fac.cleanData.reduce((s,r)=>s+r.peso_usa*10,0);
+    html+=`<div class="dash-card">
+      <div class="dash-card-title">🚛 Facturación y Mensajería</div>
+      <div class="dash-row"><span class="dash-key">Clientes</span><span class="dash-val">${clients}</span></div>
+      <div class="dash-row"><span class="dash-key">Paquetes procesados</span><span class="dash-val">${fac.cleanData.length}</span></div>
+      <div class="dash-row"><span class="dash-key">Peso total</span><span class="dash-val">${weight.toFixed(2)} kg</span></div>
+      <div class="dash-row"><span class="dash-key">Líneas de factura</span><span class="dash-val">${fac.invoiceRows.length}</span></div>
+      <div class="dash-row"><span class="dash-key">Mensajes generados</span><span class="dash-val">${fac.messageRows.length}</span></div>
+      <div class="dash-row"><span class="dash-key">Total envíos</span><span class="dash-val">$${totalShip.toFixed(2)}</span></div>
+      <div class="dash-row"><span class="dash-key">Fecha entrega</span><span class="dash-val">${fac.deliveryLabel}</span></div>
+      <div class="dash-row"><span class="dash-key">Tiempo</span><span class="dash-val">${fac.time}s</span></div>
+    </div>`;
+  }
+
+  html+='</div>';
+  el.innerHTML=html;
+}
+</script>
+</body>
+</html>
