@@ -676,26 +676,45 @@ function countWorkdays(start, end) {
 function fmtDate(d){return d.toISOString().split('T')[0];}
 function ts(){return new Date().toISOString().replace(/[:.]/g,'').slice(0,15);}
 function esc(s){return (s??'').toString().replace(/"/g,'""');}
+function sanitize(s){
+  if(s==null) return '';
+  return s.toString()
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
 
 function readFileData(file, cb) {
   const ext = file.name.split('.').pop().toLowerCase();
   if (ext==='csv') {
     const r=new FileReader();
+    r.onerror=()=>cb(null,'Error al leer el archivo CSV.');
     r.onload=e=>{
-      const res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true,transformHeader:h=>h.trim()});
-      cb(res.data, null);
+      try {
+        const res=Papa.parse(e.target.result,{header:true,skipEmptyLines:true,transformHeader:h=>h.trim()});
+        cb(res.data, null);
+      } catch(err) {
+        cb(null, 'Error al parsear CSV: '+err.message);
+      }
     };
     r.readAsText(file,'UTF-8');
   } else {
     const r=new FileReader();
+    r.onerror=()=>cb(null,'Error al leer el archivo XLSX.');
     r.onload=e=>{
-      const wb=XLSX.read(e.target.result,{type:'binary'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const data=XLSX.utils.sheet_to_json(ws,{defval:''});
-      const norm=data.map(row=>{const o={};Object.keys(row).forEach(k=>{o[k.trim()]=row[k];});return o;});
-      cb(norm, null);
+      try {
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const data=XLSX.utils.sheet_to_json(ws,{defval:''});
+        const norm=data.map(row=>{const o={};Object.keys(row).forEach(k=>{o[k.trim()]=row[k];});return o;});
+        cb(norm, null);
+      } catch(err) {
+        cb(null, 'Error al parsear XLSX: '+err.message);
+      }
     };
-    r.readAsBinaryString(file);
+    r.readAsArrayBuffer(file);
   }
 }
 
@@ -704,8 +723,8 @@ function showFileLoaded(containerId, file, extra='') {
     <div class="file-loaded">
       <span style="font-size:1.4em;">✅</span>
       <div style="flex:1;">
-        <div class="file-name">${file.name}</div>
-        <div class="file-meta">${extra} · ${(file.size/1024).toFixed(1)} KB</div>
+        <div class="file-name">${sanitize(file.name)}</div>
+        <div class="file-meta">${sanitize(extra)} · ${(file.size/1024).toFixed(1)} KB</div>
       </div>
     </div>`;
   document.getElementById(containerId).classList.remove('hidden');
@@ -719,8 +738,10 @@ function toCSV(rows, cols) {
 function downloadCSV(content, name) {
   const blob=new Blob(['\uFEFF'+content],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
+  const url=URL.createObjectURL(blob);
+  a.href=url;
   a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function mkStats(items) {
   return items.map((item,i)=>`
@@ -747,7 +768,11 @@ function mkStats(items) {
 
   setupZone('wh-zone','wh-input','wh-loaded', file=>{
     whFile=file;
-    readFileData(file, (data)=>{
+    readFileData(file, (data, err)=>{
+      if(err||!data||!data.length){
+        showValError(sanitize(err||'Archivo Warehouse vacío o no válido.'));
+        return;
+      }
       SESSION.val.whData = data;
       showFileLoaded('wh-loaded', file, `${data.length} filas`);
       checkBtnValidar();
@@ -756,7 +781,11 @@ function mkStats(items) {
 
   setupZone('inv-zone','inv-input','inv-loaded', file=>{
     invFile=file;
-    readFileData(file, (data)=>{
+    readFileData(file, (data, err)=>{
+      if(err||!data||!data.length){
+        showValError(sanitize(err||'Archivo Inventario vacío o no válido.'));
+        return;
+      }
       SESSION.val.invData = data;
       showFileLoaded('inv-loaded', file, `${data.length} filas`);
       checkBtnValidar();
@@ -770,6 +799,7 @@ function mkStats(items) {
 })();
 
 function runValidation() {
+  try {
   const t0 = performance.now();
   let wh  = SESSION.val.whData.map(r=>({...r}));
   let inv = SESSION.val.invData.map(r=>({...r}));
@@ -856,6 +886,9 @@ function runValidation() {
   SESSION.val.invCount=inv.length;
 
   renderValResults();
+  } catch(err) {
+    showValError('❌ Error inesperado durante la validación: <strong>'+sanitize(err.message)+'</strong>');
+  }
 }
 
 function showValError(html) {
@@ -878,19 +911,19 @@ function renderValResults() {
   const ftb=document.getElementById('faltantes-tbody');
   ftb.innerHTML = missing.length ? missing.map(r=>`
     <tr>
-      <td><span class="mono">${r.numero_warehouse}</span></td>
-      <td><span class="${r.estado==='Falta en Inventario'?'tag-faltainv':'tag-faltawh'}">${r.estado}</span></td>
-      <td style="color:var(--muted);font-size:.78em;">${r.fuente}</td>
+      <td><span class="mono">${sanitize(r.numero_warehouse)}</span></td>
+      <td><span class="${r.estado==='Falta en Inventario'?'tag-faltainv':'tag-faltawh'}">${sanitize(r.estado)}</span></td>
+      <td style="color:var(--muted);font-size:.78em;">${sanitize(r.fuente)}</td>
     </tr>`).join('') : `<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--success);font-weight:700;">✅ Sin faltantes</td></tr>`;
 
   // Tabla inconsistencias
   const itb=document.getElementById('inconsistencias-tbody');
   itb.innerHTML = inconsistencies.length ? inconsistencies.map(r=>`
     <tr>
-      <td><span class="mono">${r.numero_warehouse}</span></td>
-      <td style="font-size:.76em;color:var(--warning);font-weight:600;">${r.campos}</td>
-      <td style="font-size:.74em;color:var(--muted);">${r.valor_warehouse}</td>
-      <td style="font-size:.74em;color:var(--muted);">${r.valor_inventario}</td>
+      <td><span class="mono">${sanitize(r.numero_warehouse)}</span></td>
+      <td style="font-size:.76em;color:var(--warning);font-weight:600;">${sanitize(r.campos)}</td>
+      <td style="font-size:.74em;color:var(--muted);">${sanitize(r.valor_warehouse)}</td>
+      <td style="font-size:.74em;color:var(--muted);">${sanitize(r.valor_inventario)}</td>
     </tr>`).join('') : `<tr><td colspan="4" style="text-align:center;padding:28px;color:var(--success);font-weight:700;">✅ Sin inconsistencias</td></tr>`;
 
   document.getElementById('val-results').classList.remove('hidden');
@@ -1005,6 +1038,7 @@ function showFacAlert(cls, html) {
 }
 
 function runFacturacion() {
+  try {
   const t0=performance.now();
   const deliveryVal=document.getElementById('fac-date').value;
   if(!deliveryVal){alert('Selecciona la fecha de entrega.');return;}
@@ -1089,6 +1123,9 @@ function runFacturacion() {
   SESSION.fac.byClient=byClient;
 
   renderFacResults(byClient);
+  } catch(err) {
+    showFacAlert('al-err','❌ Error inesperado durante la facturación: <strong>'+sanitize(err.message)+'</strong>');
+  }
 }
 
 // ── Estado de ordenación ──────────────────────────
@@ -1142,13 +1179,13 @@ function renderFacTable() {
     else if(item==='DESADUANAJE 100-200$')badge=`<span class="cbadge cb-hi">${item}</span>`;
     else if(item==='DESADUANAJE 50-100$') badge=`<span class="cbadge cb-md">${item}</span>`;
     else if(item==='DESADUANAJE 0-50$')   badge=`<span class="cbadge cb-lo">${item}</span>`;
-    const desc=(row['Item Desc']||'').slice(0,70)+((row['Item Desc']||'').length>70?'…':'');
+    const desc=sanitize((row['Item Desc']||'').slice(0,70)+((row['Item Desc']||'').length>70?'…':''));
     const total=(+row['Item Price'] * +row['Quantity']).toFixed(2);
     return `<tr>
       <td style="color:var(--muted);font-size:.75em;">${row['Invoice Number']}</td>
-      <td><span class="td-client">${row['Customer Name']}</span></td>
+      <td><span class="td-client">${sanitize(row['Customer Name'])}</span></td>
       <td>${badge}</td>
-      <td style="max-width:220px;font-size:.74em;color:var(--muted);" title="${row['Item Desc']}">${desc}</td>
+      <td style="max-width:220px;font-size:.74em;color:var(--muted);" title="${sanitize(row['Item Desc'])}">${desc}</td>
       <td><span class="wbadge">${(+row['Quantity']).toFixed(2)}</span></td>
       <td style="font-weight:600;">$${(+row['Item Price']).toFixed(2)}</td>
       <td style="font-weight:700;color:var(--navy);">$${total}</td>
@@ -1183,22 +1220,22 @@ function renderMsgList() {
 
   const container=document.getElementById('msg-all-list');
   container.innerHTML=msgs.map((m,i)=>`
-    <div class="msg-card" data-client="${m['Customer Name'].toLowerCase()}">
+    <div class="msg-card" data-client="${sanitize(m['Customer Name'].toLowerCase())}">
       <div class="msg-card-header">
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.82em;flex-shrink:0;">
-            ${m['Customer Name'].charAt(0).toUpperCase()}
+            ${sanitize(m['Customer Name'].charAt(0).toUpperCase())}
           </div>
           <div>
-            <div style="font-weight:700;font-size:.88em;color:var(--navy);">${m['Customer Name']}</div>
-            <div style="font-size:.7em;color:var(--muted);">📅 ${m['Fecha_Entrega']}</div>
+            <div style="font-weight:700;font-size:.88em;color:var(--navy);">${sanitize(m['Customer Name'])}</div>
+            <div style="font-size:.7em;color:var(--muted);">📅 ${sanitize(m['Fecha_Entrega'])}</div>
           </div>
         </div>
         <button class="btn btn-secondary" style="padding:6px 12px;font-size:.72em;" onclick="copyMsg(${i})" id="copy-btn-${i}">
           📋 Copiar
         </button>
       </div>
-      <div class="msg-box" style="margin-top:10px;max-height:220px;">${m['Mensaje']}</div>
+      <div class="msg-box" style="margin-top:10px;max-height:220px;">${sanitize(m['Mensaje'])}</div>
     </div>`).join('');
 }
 
@@ -1224,6 +1261,11 @@ function copyMsg(idx) {
     btn.textContent='✅ Copiado';
     btn.style.color='var(--success)';
     setTimeout(()=>{btn.textContent=orig;btn.style.color='';},2000);
+  }).catch(()=>{
+    const btn=document.getElementById(`copy-btn-${idx}`);
+    btn.textContent='❌ Error';
+    btn.style.color='var(--danger)';
+    setTimeout(()=>{btn.textContent='📋 Copiar';btn.style.color='';},2000);
   });
 }
 
@@ -1268,8 +1310,8 @@ function drawResumenTable() {
 
   document.getElementById('resumen-tbody').innerHTML=
     rows.map(r=>`
-      <tr data-res-client="${r.c.toLowerCase()}">
-        <td><span class="td-client">${r.c}</span></td>
+      <tr data-res-client="${sanitize(r.c.toLowerCase())}">
+        <td><span class="td-client">${sanitize(r.c)}</span></td>
         <td><span class="wbadge">${r.n}</span></td>
         <td>${r.w.toFixed(2)} kg</td>
         <td style="color:var(--muted);">$${r.v.toFixed(2)}</td>
@@ -1411,7 +1453,7 @@ function renderResumenFileInfo(rawData, cleanData) {
     </div>
     <div style="grid-column:1/-1;">
       <div style="font-size:.68em;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">Tipos de paquete</div>
-      <div style="font-size:.76em;color:var(--navy);font-weight:600;">${tipoStr||'—'}</div>
+      <div style="font-size:.76em;color:var(--navy);font-weight:600;">${sanitize(tipoStr)||'—'}</div>
     </div>`;
 }
 
@@ -1512,7 +1554,7 @@ function renderAnalisis() {
       <div class="dash-row"><span class="dash-key">Líneas de factura</span><span class="dash-val">${fac.invoiceRows.length}</span></div>
       <div class="dash-row"><span class="dash-key">Mensajes generados</span><span class="dash-val">${fac.messageRows.length}</span></div>
       <div class="dash-row"><span class="dash-key">Total envíos</span><span class="dash-val">$${totalShip.toFixed(2)}</span></div>
-      <div class="dash-row"><span class="dash-key">Fecha entrega</span><span class="dash-val">${fac.deliveryLabel}</span></div>
+      <div class="dash-row"><span class="dash-key">Fecha entrega</span><span class="dash-val">${sanitize(fac.deliveryLabel)}</span></div>
       <div class="dash-row"><span class="dash-key">Tiempo</span><span class="dash-val">${fac.time}s</span></div>
     </div>`;
   }
